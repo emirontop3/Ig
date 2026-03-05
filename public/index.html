@@ -3,90 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InstaControl Panel</title>
+    <title>Insta API Pro</title>
     <style>
         body { font-family: sans-serif; background: #fafafa; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; border: 1px solid #dbdbdb; padding: 25px; border-radius: 8px; width: 100%; max-width: 350px; }
-        .tabs { display: flex; margin-bottom: 20px; border-radius: 5px; overflow: hidden; }
-        .tabs button { flex: 1; padding: 10px; border: 1px solid #dbdbdb; background: #efefef; cursor: pointer; }
-        .tabs button.active { background: #0095f6; color: white; border: none; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #dbdbdb; border-radius: 4px; box-sizing: border-box; }
-        #submit { width: 100%; padding: 14px; background: #0095f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .card { background: white; border: 1px solid #dbdbdb; padding: 20px; border-radius: 8px; width: 100%; max-width: 350px; }
+        input, select, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 4px; border: 1px solid #dbdbdb; box-sizing: border-box; }
+        button { background: #0095f6; color: white; font-weight: bold; cursor: pointer; border: none; }
         .hidden { display: none; }
-        #status { margin-top: 15px; padding: 10px; border-radius: 4px; text-align: center; word-wrap: break-word; font-size: 13px; }
+        #status { margin-top: 10px; padding: 10px; font-size: 13px; text-align: center; border-radius: 4px; }
+        .challenge { background: #fff9c4; color: #827717; border: 1px solid #fbc02d; }
         .error { background: #ffebee; color: #c62828; }
         .success { background: #e8f5e9; color: #2e7d32; }
     </style>
 </head>
 <body>
-
 <div class="card">
-    <h3 style="text-align:center">Insta API Control</h3>
-    <div class="tabs">
-        <button id="b1" class="active" onclick="setMode('anon')">Anonim</button>
-        <button id="b2" onclick="setMode('user')">Kendi Hesabım</button>
-    </div>
-
-    <div id="uFields" class="hidden">
-        <input type="text" id="u" placeholder="Kullanıcı Adın">
-        <input type="password" id="p" placeholder="Şifren">
-    </div>
-
-    <select id="act" onchange="toggleMsg()">
-        <option value="follow">Takip Et</option>
-        <option value="unfollow">Takipten Çık</option>
-        <option value="message">DM Gönder</option>
+    <h3 style="text-align:center">Insta Control v2</h3>
+    <select id="mode" onchange="document.getElementById('uFields').classList.toggle('hidden', this.value=='anon')">
+        <option value="anon">Anonim Mod (Bot)</option>
+        <option value="user">Kendi Hesabım</option>
     </select>
-
+    <div id="uFields" class="hidden">
+        <input type="text" id="u" placeholder="Kullanıcı Adı">
+        <input type="password" id="p" placeholder="Şifre">
+    </div>
+    <select id="act"><option value="follow">Takip Et</option><option value="message">Mesaj Gönder</option></select>
     <input type="text" id="target" placeholder="Hedef @kullanici">
-    <input type="text" id="msg" class="hidden" placeholder="Mesaj içeriği...">
+    <input type="text" id="msg" placeholder="Mesaj (varsa)">
+    
+    <div id="challengeArea" class="hidden">
+        <p style="font-size:12px; color:red;">Instagram doğrulama kodu istedi:</p>
+        <input type="text" id="vCode" placeholder="6 Haneli Kod">
+    </div>
 
-    <button id="submit" onclick="run()">İşlemi Başlat</button>
+    <button id="btn" onclick="run()">İşlemi Başlat</button>
     <div id="status" class="hidden"></div>
 </div>
 
 <script>
-    let mode = 'anon';
-    function setMode(m) {
-        mode = m;
-        document.getElementById('b1').className = m === 'anon' ? 'active' : '';
-        document.getElementById('b2').className = m === 'user' ? 'active' : '';
-        document.getElementById('uFields').className = m === 'user' ? '' : 'hidden';
-    }
-    function toggleMsg() {
-        document.getElementById('msg').className = document.getElementById('act').value === 'message' ? '' : 'hidden';
-    }
-
     async function run() {
         const s = document.getElementById('status');
-        const b = document.getElementById('submit');
-        b.innerText = "Bekleyiniz...";
-        b.disabled = true;
+        const b = document.getElementById('btn');
+        b.innerText = "İşleniyor...";
         s.className = 'hidden';
+
+        const data = {
+            mode: document.getElementById('mode').value,
+            username: document.getElementById('u').value,
+            password: document.getElementById('p').value,
+            action: document.getElementById('act').value,
+            target: document.getElementById('target').value,
+            messageText: document.getElementById('msg').value,
+            verificationCode: document.getElementById('vCode').value
+        };
 
         try {
             const r = await fetch('/api/main', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    mode: mode,
-                    username: document.getElementById('u').value,
-                    password: document.getElementById('p').value,
-                    action: document.getElementById('act').value,
-                    target: document.getElementById('target').value,
-                    messageText: document.getElementById('msg').value
-                })
+                body: JSON.stringify(data)
             });
             const res = await r.json();
+            
+            if (res.status === "challenge") {
+                document.getElementById('challengeArea').classList.remove('hidden');
+                s.className = 'status challenge';
+            } else {
+                s.className = r.ok ? 'status success' : 'status error';
+            }
             s.innerText = res.message;
-            s.className = r.ok ? 'success' : 'error';
         } catch (e) {
-            s.innerText = "Hata: Sunucuya ulaşılamadı.";
-            s.className = 'error';
+            s.innerText = "Hata oluştu!";
+            s.className = 'status error';
         } finally {
             s.classList.remove('hidden');
             b.innerText = "İşlemi Başlat";
-            b.disabled = false;
         }
     }
 </script>
