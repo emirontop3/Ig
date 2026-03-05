@@ -1,2 +1,2 @@
 instagrapi
-pydantic
+requests
