@@ -10,44 +10,49 @@ class handler(BaseHTTPRequestHandler):
             data = json.loads(post_data)
 
             cl = Client()
+            # Vercel zaman aşımını önlemek için hızlı ayar
+            cl.request_timeout = 9 
             
-            # Mod kontrolü ve giriş
-            if data['mode'] == 'anon':
-                # Senin verdiğin bilgiler
-                username = "anonimmessager"
-                password = "1901Emir"
-            else:
-                username = data['username']
-                password = data['password']
+            user = data['username'] if data['mode'] == 'user' else "anonimmessager"
+            pw = data['password'] if data['mode'] == 'user' else "1901Emir"
+            verification_code = data.get('verificationCode')
 
-            # Giriş işlemi
-            cl.login(username, password)
-            
+            try:
+                if verification_code:
+                    # Eğer kullanıcı kod girdiyse, login işlemini kodla tamamla
+                    cl.login(user, pw, verification_code=verification_code)
+                else:
+                    cl.login(user, pw)
+            except Exception as login_err:
+                if "challenge_required" in str(login_err).lower():
+                    self.send_response(403) # Özel durum kodu
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        "status": "challenge", 
+                        "message": "Instagram kod gönderdi! Lütfen mailini/uygulamanı kontrol et ve kodu gir."
+                    }).encode())
+                    return
+                else:
+                    raise login_err
+
+            # İşlemler
             target = data['target']
             action = data['action']
-            
-            result_msg = ""
             if action == 'follow':
-                user_id = cl.user_id_from_username(target)
-                cl.user_follow(user_id)
-                result_msg = f"@{target} anonim olarak takip edildi."
-            elif action == 'unfollow':
-                user_id = cl.user_id_from_username(target)
-                cl.user_unfollow(user_id)
-                result_msg = f"@{target} takipten çıkarıldı."
+                cl.user_follow(cl.user_id_from_username(target))
+                res = f"@{target} takip edildi."
             elif action == 'message':
-                user_id = cl.user_id_from_username(target)
-                cl.direct_send(data['messageText'], [int(user_id)])
-                result_msg = f"@{target} kullanıcısına mesaj gönderildi."
+                cl.direct_send(data['messageText'], [int(cl.user_id_from_username(target))])
+                res = "Mesaj gönderildi."
+            else:
+                res = "Giriş başarılı, işlem seçilmedi."
 
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({"status": "success", "message": result_msg}).encode())
+            self.wfile.write(json.dumps({"status": "success", "message": res}).encode())
 
         except Exception as e:
             self.send_response(500)
-            self.send_header('Content-type', 'application/json')
             self.end_headers()
-            # Hatayı detaylıca gönderiyoruz ki ekranda görebilesin
             self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode())
