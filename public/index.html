@@ -3,54 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insta API Auto-Proxy</title>
+    <title>Insta-Shadow Vercel</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #fafafa; display: flex; justify-content: center; padding: 30px; }
-        .box { background: white; border: 1px solid #dbdbdb; padding: 25px; border-radius: 8px; width: 350px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #dbdbdb; border-radius: 4px; box-sizing: border-box; }
-        button { background: #0095f6; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #b2dffc; }
-        #status { margin-top: 15px; padding: 10px; border-radius: 4px; font-size: 13px; text-align: center; display: none; }
-        .err { background: #ffebee; color: #c62828; }
-        .ok { background: #e8f5e9; color: #2e7d32; }
-        .loader { font-size: 11px; color: #666; text-align: center; }
+        body { font-family: 'Courier New', monospace; background: #000; color: #0f0; display: flex; justify-content: center; padding: 20px; }
+        .box { border: 2px solid #0f0; padding: 20px; width: 100%; max-width: 350px; box-shadow: 0 0 15px #0f0; }
+        input, select, button { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #0f0; color: #0f0; outline: none; }
+        button { cursor: pointer; font-weight: bold; background: #0f0; color: #000; }
+        button:disabled { opacity: 0.5; }
+        #status { margin-top: 15px; border: 1px dashed #0f0; padding: 10px; font-size: 12px; display: none; }
     </style>
 </head>
 <body>
 <div class="box">
-    <h3 style="text-align:center">Insta Auto-Proxy v4</h3>
-    <p class="loader">Sistem otomatik olarak gerçek proxy kullanacaktır.</p>
+    <h2 style="text-align:center">ANONIM CONTROL</h2>
+    <p style="font-size:10px">Sistem: Vercel | Mod: Otomatik Proxy</p>
     
-    <input type="text" id="target" placeholder="Hedef @kullanici">
-    <button id="btn" onclick="run()">İşlemi Başlat</button>
+    <select id="act">
+        <option value="follow">TAKİP ET</option>
+        <option value="message">DM GÖNDER</option>
+    </select>
     
+    <input type="text" id="target" placeholder="@hedef_kullanici">
+    <input type="text" id="msg" placeholder="Mesaj (DM için)">
+    
+    <button id="btn" onclick="start()">SİSTEMİ TETİKLE</button>
     <div id="status"></div>
 </div>
 
 <script>
-    async function run() {
+    async function start() {
         const s = document.getElementById('status');
         const b = document.getElementById('btn');
         b.disabled = true;
-        b.innerText = "Proxy Aranıyor ve Giriş Yapılıyor...";
-        s.style.display = 'none';
+        b.innerText = "PROXY ARANIYOR...";
+        s.style.display = 'block';
+        s.innerText = "> Hedefe sızılıyor...";
 
         try {
             const r = await fetch('/api/main', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ target: document.getElementById('target').value })
+                body: JSON.stringify({
+                    target: document.getElementById('target').value,
+                    action: document.getElementById('act').value,
+                    messageText: document.getElementById('msg').value
+                })
             });
             const res = await r.json();
-            s.innerText = res.message;
-            s.className = r.ok ? 'ok' : 'err';
+            s.innerText = "> " + res.message;
         } catch (e) {
-            s.innerText = "Zaman aşımı! Proxy çok yavaş kaldı.";
-            s.className = 'err';
+            s.innerText = "> HATA: Bağlantı Instagram tarafından reddedildi.";
         } finally {
-            s.style.display = 'block';
             b.disabled = false;
-            b.innerText = "İşlemi Başlat";
+            b.innerText = "SİSTEMİ TETİKLE";
         }
     }
 </script>
