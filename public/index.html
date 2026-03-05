@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaControl API Panel</title>
+    <style>
+        :root { --ig-blue: #0095f6; --ig-bg: #fafafa; --ig-border: #dbdbdb; }
+        body { font-family: -apple-system, sans-serif; background: var(--ig-bg); display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; border: 1px solid var(--ig-border); padding: 25px; border-radius: 8px; width: 100%; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h2 { text-align: center; color: #262626; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 1px solid var(--ig-border); padding-bottom: 10px; }
+        .tabs button { flex: 1; padding: 10px; border: none; background: none; cursor: pointer; font-weight: bold; color: #8e8e8e; }
+        .tabs button.active { color: var(--ig-blue); border-bottom: 2px solid var(--ig-blue); }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--ig-border); border-radius: 4px; box-sizing: border-box; background: #fafafa; }
+        #submit-btn { width: 100%; padding: 14px; background: var(--ig-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+        #submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .hidden { display: none; }
+        #status { margin-top: 15px; padding: 10px; border-radius: 4px; text-align: center; font-size: 14px; }
+        .success { background: #e6f4ea; color: #1e8e3e; }
+        .error { background: #fce8e6; color: #d93025; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Insta API Control</h2>
+    
+    <div class="tabs">
+        <button id="tab-anon" class="active" onclick="toggleMode('anon')">Anonim (Bot)</button>
+        <button id="tab-user" onclick="toggleMode('user')">Kendi Hesabım</button>
+    </div>
+
+    <div id="auth-section" class="hidden">
+        <input type="text" id="my-username" placeholder="Kullanıcı Adın">
+        <input type="password" id="my-password" placeholder="Şifren">
+    </div>
+
+    <select id="action-select" onchange="checkAction()">
+        <option value="follow">Takip Et</option>
+        <option value="unfollow">Takipten Çık</option>
+        <option value="message">DM Gönder</option>
+    </select>
+
+    <input type="text" id="target-user" placeholder="Hedef @kullanici">
+    <input type="text" id="dm-text" class="hidden" placeholder="Gönderilecek Mesaj...">
+
+    <button id="submit-btn" onclick="executeAction()">İşlemi Başlat</button>
+    <div id="status" class="hidden"></div>
+</div>
+
+<script>
+    let currentMode = 'anon';
+
+    function toggleMode(mode) {
+        currentMode = mode;
+        document.getElementById('tab-anon').classList.toggle('active', mode === 'anon');
+        document.getElementById('tab-user').classList.toggle('active', mode === 'user');
+        document.getElementById('auth-section').classList.toggle('hidden', mode === 'anon');
+    }
+
+    function checkAction() {
+        const action = document.getElementById('action-select').value;
+        document.getElementById('dm-text').classList.toggle('hidden', action !== 'message');
+    }
+
+    async function executeAction() {
+        const btn = document.getElementById('submit-btn');
+        const statusDiv = document.getElementById('status');
+        
+        btn.disabled = true;
+        btn.innerText = "Bağlanıyor...";
+        statusDiv.classList.add('hidden');
+
+        const payload = {
+            mode: currentMode,
+            username: document.getElementById('my-username').value,
+            password: document.getElementById('my-password').value,
+            action: document.getElementById('action-select').value,
+            target: document.getElementById('target-user').value,
+            messageText: document.getElementById('dm-text').value
+        };
+
+        try {
+            const response = await fetch('/api/main', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            
+            statusDiv.innerText = result.message;
+            statusDiv.className = response.ok ? 'success' : 'error';
+            statusDiv.classList.remove('hidden');
+        } catch (err) {
+            statusDiv.innerText = "Sunucu hatası veya zaman aşımı!";
+            statusDiv.className = 'error';
+            statusDiv.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "İşlemi Başlat";
+        }
+    }
+</script>
+
+</body>
+</html>
