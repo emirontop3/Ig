@@ -3,80 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insta API Pro</title>
+    <title>Insta API Auto-Proxy</title>
     <style>
-        body { font-family: sans-serif; background: #fafafa; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; border: 1px solid #dbdbdb; padding: 20px; border-radius: 8px; width: 100%; max-width: 350px; }
-        input, select, button { width: 100%; padding: 12px; margin: 5px 0; border-radius: 4px; border: 1px solid #dbdbdb; box-sizing: border-box; }
-        button { background: #0095f6; color: white; font-weight: bold; cursor: pointer; border: none; }
-        .hidden { display: none; }
-        #status { margin-top: 10px; padding: 10px; font-size: 13px; text-align: center; border-radius: 4px; }
-        .challenge { background: #fff9c4; color: #827717; border: 1px solid #fbc02d; }
-        .error { background: #ffebee; color: #c62828; }
-        .success { background: #e8f5e9; color: #2e7d32; }
+        body { font-family: -apple-system, sans-serif; background: #fafafa; display: flex; justify-content: center; padding: 30px; }
+        .box { background: white; border: 1px solid #dbdbdb; padding: 25px; border-radius: 8px; width: 350px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #dbdbdb; border-radius: 4px; box-sizing: border-box; }
+        button { background: #0095f6; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #b2dffc; }
+        #status { margin-top: 15px; padding: 10px; border-radius: 4px; font-size: 13px; text-align: center; display: none; }
+        .err { background: #ffebee; color: #c62828; }
+        .ok { background: #e8f5e9; color: #2e7d32; }
+        .loader { font-size: 11px; color: #666; text-align: center; }
     </style>
 </head>
 <body>
-<div class="card">
-    <h3 style="text-align:center">Insta Control v2</h3>
-    <select id="mode" onchange="document.getElementById('uFields').classList.toggle('hidden', this.value=='anon')">
-        <option value="anon">Anonim Mod (Bot)</option>
-        <option value="user">Kendi Hesabım</option>
-    </select>
-    <div id="uFields" class="hidden">
-        <input type="text" id="u" placeholder="Kullanıcı Adı">
-        <input type="password" id="p" placeholder="Şifre">
-    </div>
-    <select id="act"><option value="follow">Takip Et</option><option value="message">Mesaj Gönder</option></select>
-    <input type="text" id="target" placeholder="Hedef @kullanici">
-    <input type="text" id="msg" placeholder="Mesaj (varsa)">
+<div class="box">
+    <h3 style="text-align:center">Insta Auto-Proxy v4</h3>
+    <p class="loader">Sistem otomatik olarak gerçek proxy kullanacaktır.</p>
     
-    <div id="challengeArea" class="hidden">
-        <p style="font-size:12px; color:red;">Instagram doğrulama kodu istedi:</p>
-        <input type="text" id="vCode" placeholder="6 Haneli Kod">
-    </div>
-
+    <input type="text" id="target" placeholder="Hedef @kullanici">
     <button id="btn" onclick="run()">İşlemi Başlat</button>
-    <div id="status" class="hidden"></div>
+    
+    <div id="status"></div>
 </div>
 
 <script>
     async function run() {
         const s = document.getElementById('status');
         const b = document.getElementById('btn');
-        b.innerText = "İşleniyor...";
-        s.className = 'hidden';
-
-        const data = {
-            mode: document.getElementById('mode').value,
-            username: document.getElementById('u').value,
-            password: document.getElementById('p').value,
-            action: document.getElementById('act').value,
-            target: document.getElementById('target').value,
-            messageText: document.getElementById('msg').value,
-            verificationCode: document.getElementById('vCode').value
-        };
+        b.disabled = true;
+        b.innerText = "Proxy Aranıyor ve Giriş Yapılıyor...";
+        s.style.display = 'none';
 
         try {
             const r = await fetch('/api/main', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
+                body: JSON.stringify({ target: document.getElementById('target').value })
             });
             const res = await r.json();
-            
-            if (res.status === "challenge") {
-                document.getElementById('challengeArea').classList.remove('hidden');
-                s.className = 'status challenge';
-            } else {
-                s.className = r.ok ? 'status success' : 'status error';
-            }
             s.innerText = res.message;
+            s.className = r.ok ? 'ok' : 'err';
         } catch (e) {
-            s.innerText = "Hata oluştu!";
-            s.className = 'status error';
+            s.innerText = "Zaman aşımı! Proxy çok yavaş kaldı.";
+            s.className = 'err';
         } finally {
-            s.classList.remove('hidden');
+            s.style.display = 'block';
+            b.disabled = false;
             b.innerText = "İşlemi Başlat";
         }
     }
