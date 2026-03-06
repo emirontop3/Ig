@@ -1,63 +1,36 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insta-Shadow Vercel</title>
+    <title>Emirattaa Bot Panel</title>
     <style>
-        body { font-family: 'Courier New', monospace; background: #000; color: #0f0; display: flex; justify-content: center; padding: 20px; }
-        .box { border: 2px solid #0f0; padding: 20px; width: 100%; max-width: 350px; box-shadow: 0 0 15px #0f0; }
-        input, select, button { width: 100%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #0f0; color: #0f0; outline: none; }
-        button { cursor: pointer; font-weight: bold; background: #0f0; color: #000; }
-        button:disabled { opacity: 0.5; }
-        #status { margin-top: 15px; border: 1px dashed #0f0; padding: 10px; font-size: 12px; display: none; }
+        body { background: #000; color: #0f0; font-family: monospace; text-align: center; padding: 50px; }
+        input { padding: 10px; background: #111; border: 1px solid #0f0; color: #0f0; width: 250px; }
+        button { padding: 10px 20px; background: #0f0; color: #000; border: none; cursor: pointer; font-weight: bold; }
+        #status { margin-top: 20px; color: #aaa; }
     </style>
 </head>
 <body>
-<div class="box">
-    <h2 style="text-align:center">ANONIM CONTROL</h2>
-    <p style="font-size:10px">Sistem: Vercel | Mod: Otomatik Proxy</p>
-    
-    <select id="act">
-        <option value="follow">TAKİP ET</option>
-        <option value="message">DM GÖNDER</option>
-    </select>
-    
+    <h2>INSTA-SHADOW v2</h2>
     <input type="text" id="target" placeholder="@hedef_kullanici">
-    <input type="text" id="msg" placeholder="Mesaj (DM için)">
-    
-    <button id="btn" onclick="start()">SİSTEMİ TETİKLE</button>
+    <button onclick="send()">TAKİP ET</button>
     <div id="status"></div>
-</div>
 
-<script>
-    async function start() {
-        const s = document.getElementById('status');
-        const b = document.getElementById('btn');
-        b.disabled = true;
-        b.innerText = "PROXY ARANIYOR...";
-        s.style.display = 'block';
-        s.innerText = "> Hedefe sızılıyor...";
-
-        try {
-            const r = await fetch('/api/main', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    target: document.getElementById('target').value,
-                    action: document.getElementById('act').value,
-                    messageText: document.getElementById('msg').value
-                })
-            });
-            const res = await r.json();
-            s.innerText = "> " + res.message;
-        } catch (e) {
-            s.innerText = "> HATA: Bağlantı Instagram tarafından reddedildi.";
-        } finally {
-            b.disabled = false;
-            b.innerText = "SİSTEMİ TETİKLE";
+    <script>
+        async function send() {
+            const status = document.getElementById('status');
+            status.innerText = "Operasyon başlatıldı...";
+            try {
+                const r = await fetch('/follow', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ target: document.getElementById('target').value })
+                });
+                const res = await r.json();
+                status.innerText = res.mesaj;
+            } catch (e) {
+                status.innerText = "HATA: Sunucuya bağlanılamadı.";
+            }
         }
-    }
-</script>
+    </script>
 </body>
 </html>
