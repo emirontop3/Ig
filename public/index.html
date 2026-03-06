@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Shadow Control v7</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .terminal { border: 1px solid #0f0; padding: 30px; background: #0a0a0a; box-shadow: 0 0 20px #0f03; width: 350px; text-align: center; }
+        input { width: 90%; padding: 10px; margin: 10px 0; background: #000; border: 1px solid #0f0; color: #0f0; outline: none; }
+        button { width: 95%; padding: 12px; background: #0f0; color: #000; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #0c0; }
+        #status { margin-top: 15px; font-size: 13px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <h3>INSTA-COMMAND v7</h3>
+        <input type="text" id="target" placeholder="@hedef_kullanici">
+        <input type="text" id="msg" placeholder="Mesaj..." value="Selam!">
+        <button onclick="execute()">KOMUTU ÇALIŞTIR</button>
+        <div id="status">Sistem hazır...</div>
+    </div>
+
+    <script>
+        async function execute() {
+            const status = document.getElementById('status');
+            const target = document.getElementById('target').value;
+            const msg = document.getElementById('msg').value;
+
+            if(!target) return status.innerText = "Hedef girilmedi!";
+            
+            status.innerText = "İşlem yapılıyor, bekleyin...";
+            status.style.color = "#0f0";
+
+            try {
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target: target, message: msg })
+                });
+                const result = await response.json();
+                status.innerText = result.message;
+                if(!response.ok) status.style.color = "#f00";
+            } catch (e) {
+                status.innerText = "Sunucu hatası veya zaman aşımı!";
+                status.style.color = "#f00";
+            }
+        }
+    </script>
+</body>
+</html>
