@@ -1,50 +1,58 @@
-import time
 import os
+from flask import Flask, request, jsonify
 from instagrapi import Client
-from instagrapi.exceptions import ChallengeRequired, VerificationCodeInvalid
 
-def login_to_instagram():
+app = Flask(__name__)
+cl = Client()
+
+# --- SENİN ÖZEL ANAHTARIN ---
+# Bu ID ile Instagram seni "tarayıcıda zaten açık olan oturum" olarak görecek.
+INSTAGRAM_SESSION_ID = "43262476750%3ABX3ZPbvspHcVxX%3A6%3AAYhB0Y3fFOdX-lvumGG2EAvJFBdk3_ezWNYUbDzqhg"
+# ----------------------------
+
+def connect_to_insta():
+    """Session ID kullanarak sessizce sızar."""
     try:
-        if os.path.exists(SETTINGS_PATH):
-            cl.load_settings(SETTINGS_PATH)
-            try:
-                cl.get_timeline_feed()
-                return True, "Oturum Hazır"
-            except:
-                print("> Oturum düşmüş, yenileniyor...")
-
-        # Instagram'ı kuşkulandırmamak için rastgele bir bekleme
-        time.sleep(2)
-        
-        # Giriş denemesi
-        cl.login("anonimmessager", "1901Emir")
-        cl.dump_settings(SETTINGS_PATH)
-        return True, "Giriş Başarılı"
-
-    except ChallengeRequired as e:
-        # Instagram onay istiyorsa linki loglara ve cevaba basıyoruz
-        challenge_url = cl.last_json.get('challenge', {}).get('url', 'Link bulunamadı')
-        print(f"> ONAY GEREKLİ: {challenge_url}")
-        return False, f"ONAY GEREKLİ: Lütfen şu linke tıkla ve 'Benim' de: {challenge_url}"
-    
+        # Önce kimliği doğrula
+        cl.login_by_sessionid(INSTAGRAM_SESSION_ID)
+        # Oturumun gerçekten çalışıp çalışmadığını ufak bir veri çekerek test et
+        cl.get_timeline_feed() 
+        return True
     except Exception as e:
-        return False, f"Hata: {str(e)}"
+        print(f"Bağlantı Hatası: {e}")
+        return False
 
-# Flask route kısmını da buna göre güncelle:
+@app.route('/')
+def home():
+    return "<h1>Sistem Çevrimiçi</h1><p>Emirattaa Komuta Merkezi Aktif.</p>"
+
 @app.route('/follow', methods=['POST'])
 def follow_user():
     data = request.get_json()
-    target_username = data['target'].replace('@', '')
+    if not data or 'target' not in data:
+        return jsonify({"error": "Hedef belirtilmedi."}), 400
+
+    # @ işaretini temizle
+    target_username = data['target'].replace('@', '').strip()
     
-    success, message = login_to_instagram()
-    
-    if success:
+    if connect_to_insta():
         try:
+            # Kullanıcı ID'sini bul ve takip et
             user_id = cl.user_id_from_username(target_username)
             cl.user_follow(user_id)
-            return jsonify({"status": "success", "message": f"@{target_username} takip edildi!"})
+            return jsonify({
+                "status": "basarili", 
+                "mesaj": f"@{target_username} operasyonu tamamlandı. Hedef takibe alındı."
+            })
         except Exception as e:
-            return jsonify({"status": "error", "message": str(e)})
+            return jsonify({"status": "hata", "mesaj": str(e)}), 500
     else:
-        # Burası sana onay linkini gönderecek olan kısım
-        return jsonify({"status": "challenge", "message": message}), 403
+        return jsonify({
+            "status": "hata", 
+            "mesaj": "Session ID geçersiz. Instagram oturumu kapatmış olabilir."
+        }), 401
+
+if __name__ == "__main__":
+    # Render'ın atadığı portu kullan
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
